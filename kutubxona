@@ -1,0 +1,305 @@
+
+adminlar   = {}
+kitoblar   = []
+userlar    = {}
+aktiv_user = None  
+
+def _pause():
+    input("\n↩︎  Enter bosing davom etish uchun...")
+
+def _input_int(prompt):
+    while True:
+        s = input(prompt)
+        try:
+            return int(s)
+        except ValueError:
+            print("❗️ Butun son kiriting.")
+
+def user_kitoblar_royxati():
+    if not kitoblar:
+        print("⛔️ Hozircha hech qanday kitob yo‘q.")
+        return user_menu()
+
+    print("\n📚 Kitoblar ro'yxati:")
+    print("-" * 60)
+    for k in kitoblar:
+        print(f"ID: {k['id']:>3} | Nomi: {k['nomi']:<25} | "
+              f"Muallif: {k['author']:<15} | Narxi: {k['narxi']} so'm")
+    _pause()
+    user_menu()
+
+def user_kitob_search():
+    if not kitoblar:
+        print("⛔️ Hozircha hech qanday kitob yo‘q.")
+        return user_menu()
+
+    q = input("Qidirayotgan nom/muallif yoki ID: ").strip().lower()
+    if not q:
+        print("❗️ Bo‘sh qidiruv so‘zi kiritildi.")
+        return user_menu()
+
+    natija = [k for k in kitoblar if
+              q in k['nomi'].lower()
+              or q in k['author'].lower()
+              or q == k['id'].lower()]
+
+    if natija:
+        print(f"\n🔎 {len(natija)} ta kitob topildi:")
+        print("-" * 60)
+        for k in natija:
+            print(f"ID: {k['id']:>3} | Nomi: {k['nomi']:<25} | "
+                  f"Muallif: {k['author']:<15} | Narxi: {k['narxi']} so'm")
+    else:
+        print("❌ Hech narsa topilmadi.")
+    _pause()
+    user_menu()
+
+def user_kitob_detail_va_xarid():
+    if not kitoblar:
+        print("⛔️ Hozircha hech qanday kitob yo‘q.")
+        return user_menu()
+
+    id_ = input("Kitob ID sini kiriting: ").strip()
+    for k in kitoblar:
+        if k['id'] == id_:
+            print(f"""
+📖 Kitob haqida
+ID      : {k['id']}
+Nomi    : {k['nomi']}
+Muallif : {k['author']}
+Narxi   : {k['narxi']} so'm
+""")
+            if input("Sotib olasizmi? [ha/yo'q]: ").lower() == "ha":
+                balans = userlar[aktiv_user]['balans']
+                if balans >= k['narxi']:
+                    userlar[aktiv_user]['balans']   -= k['narxi']
+                    userlar[aktiv_user]['xaridlar'].append(k)
+                    print("✅ Xarid amalga oshirildi!")
+                    print(f"💳 Yangi balans: {userlar[aktiv_user]['balans']} so'm")
+                else:
+                    print("❌ Balansingiz yetarli emas.")
+            break
+    else:
+        print("❌ Bunday ID topilmadi.")
+    _pause()
+    user_menu()
+
+def user_balans():
+    balans = userlar[aktiv_user]['balans']
+    print(f"\n💳 Joriy balans: {balans} so'm")
+    if input("Balansni to‘ldirasizmi? [ha/yo'q]: ").lower() == "ha":
+        summa = _input_int("To‘ldirish summasi: ")
+        if summa > 0:
+            userlar[aktiv_user]['balans'] += summa
+            print("✅ Balans to‘ldirildi.")
+            print(f"🟢 Yangi balans: {userlar[aktiv_user]['balans']} so'm")
+    _pause()
+    user_menu()
+
+def user_xaridlar():
+    xaridlar = userlar[aktiv_user]['xaridlar']
+    if not xaridlar:
+        print("📭 Hali hech qanday xarid qilmagansiz.")
+    else:
+        print("\n🛒 Xarid qilingan kitoblar:")
+        print("-" * 50)
+        for i, k in enumerate(xaridlar, 1):
+            print(f"{i}. {k['nomi']} | {k['author']} | {k['narxi']} so'm")
+    _pause()
+    user_menu()
+
+def user_menu():
+    print(f"\n📘 USER PANEL ({aktiv_user})")
+    print("""
+ 1. Kitoblar ro'yhati
+ 2. Kitob search
+ 3. Kitob detail va sotib olish
+ 4. Balans
+ 5. Xaridlar
+ 6. Ortga
+""")
+    tanlov = input("Tanlovni kiriting: ")
+    if   tanlov == "1": user_kitoblar_royxati()
+    elif tanlov == "2": user_kitob_search()
+    elif tanlov == "3": user_kitob_detail_va_xarid()
+    elif tanlov == "4": user_balans()
+    elif tanlov == "5": user_xaridlar()
+    elif tanlov == "6": asosiy_menu()
+    else:
+        print("❌ Noto‘g‘ri tanlov!")
+        user_menu()
+
+def user_registration():
+    while True:
+        login = input("🆕 Login tanlang: ").strip()
+        if login in userlar:
+            print("Bu login band.")
+            continue
+        parol = input("Parol: ").strip()
+        userlar[login] = {"parol": parol, "balans": 0, "xaridlar": []}
+        global aktiv_user
+        aktiv_user = login
+        print("✅ Ro‘yxatdan o‘tdingiz!")
+        user_menu()
+        break
+
+def user_panel():
+    login = input("Login: ").strip()
+    parol = input("Parol: ").strip()
+    if login in userlar and userlar[login]["parol"] == parol:
+        global aktiv_user
+        aktiv_user = login
+        print(f"✅ Xush kelibsiz, {login}!")
+        user_menu()
+    else:
+        print("❌ Login/parol xato yoki mavjud emas — ro‘yxatdan o‘tasiz.")
+        user_registration()
+
+
+def admin_registration():
+    login = input("Yangi admin login: ").strip()
+    if login in adminlar:
+        print("Bu login band.")
+        return admin_menu()
+    parol = input("Parol: ").strip()
+    adminlar[login] = parol
+    print("✅ Admin ro‘yxatdan o‘tdi.")
+    admin_menu()
+
+def kitob_qoshish():
+    id_ = input("Kitob ID: ").strip()
+    nomi = input("Nomi: ").strip()
+    author = input("Muallif: ").strip()
+    narxi  = _input_int("Narxi (so‘m): ")
+    kitoblar.append({'id': id_, 'nomi': nomi, 'author': author, 'narxi': narxi})
+    print("✅ Kitob qo‘shildi.")
+    if input("Yana kitob qo‘shasizmi? [ha/yo'q]: ").lower() == "ha":
+        kitob_qoshish()
+    else:
+        admin_menu()
+
+def kitob_tahrirlash():
+    id_ = input("Tahrirlanadigan kitob ID: ").strip()
+    for k in kitoblar:
+        if k['id'] == id_:
+            print(f"Joriy: {k['id']} | {k['nomi']} | {k['author']} | {k['narxi']}")
+            k['nomi']   = input("Yangi nom (bo‘sh qoldirsangiz o‘zgarmaydi): ") or k['nomi']
+            k['author'] = input("Yangi muallif: ") or k['author']
+            narx = input("Yangi narx: ")
+            k['narxi'] = int(narx) if narx else k['narxi']
+            print("✅ Yangilandi.")
+            break
+    else:
+        print("❌ Bunday ID topilmadi.")
+    admin_menu()
+
+def kitob_ochirish():
+    if not kitoblar:
+        print("⛔️ Kitoblar ro‘yxati bo‘sh.")
+        return admin_menu()
+    id_ = input("O‘chiriladigan kitob ID: ").strip()
+    for k in kitoblar:
+        if k['id'] == id_:
+            kitoblar.remove(k)
+            print("✅ Kitob o‘chirildi.")
+            break
+    else:
+        print("❌ Bunday ID topilmadi.")
+    admin_menu()
+
+def kitob_detail():
+    id_ = input("Ko‘rmoqchi bo‘lgan kitob ID: ").strip()
+    for k in kitoblar:
+        if k['id'] == id_:
+            print(f"""
+ID    : {k['id']}
+Nomi  : {k['nomi']}
+Muallif: {k['author']}
+Narxi : {k['narxi']} so'm
+""")
+            break
+    else:
+        print("❌ Bunday ID topilmadi.")
+    _pause()
+    admin_menu()
+
+def kitoblar_royxati():
+    if not kitoblar:
+        print("⛔️ Kitoblar yo‘q.")
+        return admin_menu()
+    print("\n📚 Barcha kitoblar:")
+    print("-" * 60)
+    for k in kitoblar:
+        print(f"{k['id']:>3} | {k['nomi']:<25} | {k['author']:<15} | {k['narxi']} so'm")
+    _pause()
+    admin_menu()
+
+def kitob_search():
+    q = input("Qidiruv (nom/muallif/ID): ").lower()
+    natija = [k for k in kitoblar if
+              q in k['nomi'].lower() or
+              q in k['author'].lower() or
+              q == k['id'].lower()]
+    if natija:
+        for k in natija:
+            print(f"- {k['id']} | {k['nomi']} | {k['author']} | {k['narxi']} so'm")
+    else:
+        print("❌ Topilmadi.")
+    _pause()
+    admin_menu()
+
+def admin_menu():
+    print("""
+======= ADMIN MENU =======
+ 1  – Kitob qo‘shish
+ 2  – Kitob tahrirlash
+ 3  – Kitob o‘chirish
+ 4  – Kitob detail
+ 5  – Kitoblar ro‘yhatini ko‘rish
+ 6  – Kitob qidirish
+ 7  – Ortga (asosiy menu)
+""")
+    tanlov = input("Tanlov: ")
+    if   tanlov == "1": kitob_qoshish()
+    elif tanlov == "2": kitob_tahrirlash()
+    elif tanlov == "3": kitob_ochirish()
+    elif tanlov == "4": kitob_detail()
+    elif tanlov == "5": kitoblar_royxati()
+    elif tanlov == "6": kitob_search()
+    elif tanlov == "7": asosiy_menu()
+    else:
+        print("Noto‘g‘ri tanlov!")
+        admin_menu()
+
+def admin_panel():
+    login = input("Admin login: ").strip()
+    parol = input("Parol: ").strip()
+    if adminlar.get(login) == parol:
+        print("✅ Admin tasdiqlandi.")
+        admin_menu()
+    else:
+        print("❌ Login/parol xato.")
+        if input("Ro‘yxatdan o‘tasizmi? [ha/yo'q]: ").lower() == "ha":
+            admin_registration()
+        else:
+            asosiy_menu()
+
+def asosiy_menu():
+    print("""
+======= ASOSIY MENU ======
+ 1 – Admin panel
+ 2 – User panel
+ 3 – Dasturdan chiqish
+""")
+    tanlov = input("Tanlov: ")
+    if   tanlov == "1": admin_panel()
+    elif tanlov == "2": user_panel()
+    elif tanlov == "3":
+        print("Dasturdan chiqdingiz.")
+        exit()
+    else:
+        print("Noto‘g‘ri tanlov!")
+        asosiy_menu()
+
+if __name__ == "__main__":
+    asosiy_menu()
